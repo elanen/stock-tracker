@@ -82,7 +82,7 @@ const scraper = async (symbol) => {
     // [END Puppeteer]
 };
 
-exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedule('0 * * * *').timeZone('Europe/London').onRun(async (context) => {
+exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedule('*/30 * * * *').timeZone('Europe/London').onRun(async (context) => {
     const ts = admin.firestore.FieldValue.serverTimestamp();
     const db = admin.firestore();
     
