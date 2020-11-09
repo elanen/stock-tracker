@@ -3,15 +3,11 @@ const puppeteer = require('puppeteer');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
-exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedule('0 * * * *').timeZone('Europe/London').onRun(async (context) => {
-
-    const ts = admin.firestore.FieldValue.serverTimestamp();
-    const db = admin.firestore();
-    
+const scraper = async (symbol) => {
     // [START Puppeteer]
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
-    await page.goto('https://www.marketwatch.com/investing/stock/nio');
+    await page.goto(`https://www.marketwatch.com/investing/stock/${symbol}`);
     await page.waitFor(3000);
     await page.reload();
     await page.waitForSelector('bg-quote.value');
@@ -81,13 +77,36 @@ exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedul
     });
 
     await browser.close();
-    // [END Puppeteer]
 
-    return db.collection('marketwatch').add({
-        ...result,
-        createdAt: ts
+    return result;
+    // [END Puppeteer]
+};
+
+exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedule('0 * * * *').timeZone('Europe/London').onRun(async (context) => {
+    const ts = admin.firestore.FieldValue.serverTimestamp();
+    const db = admin.firestore();
+    
+    const updateDB = async (symbol, result) => {
+        return db.collection('marketwatch').add({
+            ...result,
+            symbol: symbol,
+            createdAt: ts
+        }).catch(e => {
+            console.log('ERROR WRITING TO FIRESTORE: ', e);
+        });
+    };
+
+    await scraper('nio').then(res => {
+        return updateDB(res);
     }).catch(e => {
-        console.log('ERROR WRITING TO FIRESTORE: ', e);
+        console.log('ERROR RUNNING SCRAPER: ', e);
     });
 
+    await scraper('tsla').then(res => {
+        return updateDB(res);
+    }).catch(e => {
+        console.log('ERROR RUNNING SCRAPER: ', e);
+    });
+
+    return;
 });
