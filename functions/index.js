@@ -97,13 +97,13 @@ exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedul
     };
 
     await scraper('nio').then(res => {
-        return updateDB(res);
+        return updateDB('nio', res);
     }).catch(e => {
         console.log('ERROR RUNNING SCRAPER: ', e);
     });
 
     await scraper('tsla').then(res => {
-        return updateDB(res);
+        return updateDB('tsla', res);
     }).catch(e => {
         console.log('ERROR RUNNING SCRAPER: ', e);
     });
