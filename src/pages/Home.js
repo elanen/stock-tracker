@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Label, Select } from '@rebass/forms'
 import { Box, Button, Flex, Heading } from 'rebass';
+import { Line } from 'react-chartjs-2';
 import { symbols } from '../data/symbols';
 import { retrieveOpeningData } from '../functions/httpRequests';
 
@@ -9,12 +10,13 @@ const Home = (props) => {
     const [symbol, setSymbol] = useState(symbols[0]);
 
     const handleChange = (e) => {
-        setSymbol(e.target.value);
+        const finalObj = symbols.filter(s => s.symbol === e.target.value);
+        setSymbol(finalObj[0]);
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        retrieveOpeningData(symbol.trigger, props.setData, props.setIsLoading);
+        retrieveOpeningData(symbol, props.setData, props.setIsLoading);
     };
 
     return (
@@ -33,7 +35,7 @@ const Home = (props) => {
                         <Select 
                             id="symbol" 
                             name="symbol" 
-                            value={symbol}
+                            value={symbol.symbol}
                             onChange={handleChange}
                             minWidth={120}
                             sx={{ border: '2px solid black' }}
@@ -52,20 +54,18 @@ const Home = (props) => {
                             ml={12}
                             sx={{ cursor: 'pointer', height: 37 }}
                         >
-                            Submit
+                            Update
                         </Button>
                     </Box>
                 </Flex>
                 {props.isLoading ? (
                     <></>
                 ):(
-                    <Flex flexDirection="column">
-                        {props.data && props.data.map((obj, i) => (
-                            <div key={i}>
-                                <div>{`X: ${obj.x}`}</div>
-                                <div>{`Y: ${obj.y}`}</div>
-                            </div>
-                        ))}
+                    <Flex mt={36} flexDirection="column">                        
+                        <Line 
+                            data={props.data}
+                            options={{  }}
+                        />
                     </Flex>
                 )}
             </Flex>

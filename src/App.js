@@ -8,11 +8,15 @@ import { retrieveOpeningData } from './functions/httpRequests';
 
 const App = () => {
     
-    const [data, setData] = useState([]);
+    const [data, setData] = useState({ labels: [], datasets: [] });
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        retrieveOpeningData('tsla', setData, setIsLoading);
+        retrieveOpeningData(
+            { symbol: 'TSLA', trigger: 'tsla', key: 0 }, 
+            setData, 
+            setIsLoading
+        );
     }, []);
     
     return (

@@ -115,12 +115,12 @@ exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedul
 });
 
 exports.retrieveOpeningData = functions.https.onCall(async (data, context) => {
-    
+
     const db = admin.firestore().collection('marketwatch');
     let rawArray = [];
 
     // retrieve docs with symbol from client (24x the amount needed)
-    await db.where("symbol", "==", data.symbol).get().then(snap => {
+    await db.orderBy('createdAt', 'desc').where("symbol", "==", data.symbol).get().then(snap => {
         return snap.docs.map(doc => {
             return rawArray.push(doc.data());
         });
@@ -140,9 +140,9 @@ exports.retrieveOpeningData = functions.https.onCall(async (data, context) => {
     };
 
     // array containing docs scraped at market open
-    const openTimeArray = await extractTimeAndPrice(rawArray, '20:30');
+    const openTimeArray = await extractTimeAndPrice(rawArray, '15:30');
     // array containing docs scraped at market open + 30 mins
-    const openTimePlusThirtyArray = await extractTimeAndPrice(rawArray, '21:00');
+    const openTimePlusThirtyArray = await extractTimeAndPrice(rawArray, '16:00');
 
     // function to return date in format mm/dd/yyyy
     const extractDate = async (obj) => {

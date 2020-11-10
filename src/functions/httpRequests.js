@@ -5,10 +5,18 @@ export const retrieveOpeningData = async (symbol, setData, setIsLoading) => {
     let array = [];
     const getData = functions.httpsCallable('retrieveOpeningData');
     await setIsLoading(true);
-    await getData({ symbol: symbol }).then(res => {
+    await getData({ symbol: symbol.trigger }).then(res => {
         array = res.data.data;          
     });
-    console.log('Array: ', array);
-    await setData(array);
+    const filteredData = array[0];
+    await setData({ 
+        labels: ['% Change', 'Date'], 
+        datasets: [
+            {
+                label: symbol.symbol,
+                data: filteredData
+            }
+        ]
+    });
     return setIsLoading(false);
 };
