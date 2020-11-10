@@ -113,3 +113,75 @@ exports.marketwatchScraper = functions.runWith({ memory: '1GB' }).pubsub.schedul
 
     return;
 });
+
+exports.retrieveOpeningData = functions.https.onCall(async (data, context) => {
+    
+    const db = admin.firestore().collection('marketwatch');
+    let rawArray = [];
+
+    // retrieve docs with symbol from client (24x the amount needed)
+    await db.where("symbol", "==", data.symbol).get().then(snap => {
+        return snap.docs.map(doc => {
+            return rawArray.push(doc.data());
+        });
+    });
+
+    // function to return docs in array with specific time of day
+    const extractTimeAndPrice = async (array, time) => {
+        // eslint-disable-next-line
+        const tpArray = await array.filter(obj => {
+            const ts = obj.createdAt.toDate();
+            const dtString = ts.toISOString();
+            if (dtString.includes(time)) {
+                return obj;
+            }
+        });
+        return tpArray;
+    };
+
+    // array containing docs scraped at market open
+    const openTimeArray = await extractTimeAndPrice(rawArray, '20:30');
+    // array containing docs scraped at market open + 30 mins
+    const openTimePlusThirtyArray = await extractTimeAndPrice(rawArray, '21:00');
+
+    // function to return date in format mm/dd/yyyy
+    const extractDate = async (obj) => {
+        const ts = obj.createdAt.toDate();
+        const dd = String(ts.getDate()).padStart(2, '0');
+        const mm = String(ts.getMonth() + 1).padStart(2, '0');
+        const yyyy = ts.getFullYear();
+        return `${mm}/${dd}/${yyyy}`;
+    };
+
+    // function to calculate percent difference between two numbers
+    const calculateDifference = async (numOne, numTwo) => {
+        const n1 = Number(numOne);
+        const n2 = Number(numTwo);
+        return 100 * Math.abs( (n1 - n2) / ( (n1 + n2) / 2 ) );
+    };
+
+    // create array with { x: date, y: %increase }
+    const coordArray = openTimeArray.map(async objOne => {
+        const firstDate = await extractDate(objOne);
+        // eslint-disable-next-line
+        const arr = openTimePlusThirtyArray.map(async objTwo => {
+            const secondDate = await extractDate(objTwo);
+            if (firstDate === secondDate) {
+                // calculate % between
+                const p1 = objOne.currentPrice;
+                const p2 = objTwo.currentPrice;
+                const percentDifference = await calculateDifference(p1, p2);
+                return {
+                    x: objOne.createdAt,
+                    y: percentDifference
+                };
+            }
+        });
+        const fa = await Promise.all(arr);
+        return fa;
+    });
+
+    const finalArray = await Promise.all(coordArray);
+    return { data: finalArray };
+
+});
