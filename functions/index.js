@@ -185,3 +185,5 @@ exports.retrieveOpeningData = functions.https.onCall(async (data, context) => {
     return { data: finalArray };
 
 });
+
+
